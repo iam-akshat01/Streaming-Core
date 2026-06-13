@@ -6,7 +6,9 @@ import com.akshat.streamingv2.dto.request.UploadCompleteRequest;
 import com.akshat.streamingv2.dto.response.UploadCompleteResponse;
 import com.akshat.streamingv2.entity.Video;
 import com.akshat.streamingv2.enums.VideoStatus;
+import com.akshat.streamingv2.producer.VideoProducer;
 import com.akshat.streamingv2.repository.VideoRepository;
+import com.akshat.streamingv2.dto.message.VideoProcessingMessage;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,9 +17,11 @@ import java.util.List;
 public class VideoMetaDataService {
 
     private final VideoRepository videoRepository;
+    private final VideoProducer videoProducer;
 
-    public VideoMetaDataService(VideoRepository repo) {
+    public VideoMetaDataService(VideoRepository repo, VideoProducer videoProducer) {
         this.videoRepository = repo;
+        this.videoProducer = videoProducer;
     }
 
     public void saveVideo(Video video) {
@@ -58,6 +62,14 @@ public class VideoMetaDataService {
         video.setUploadedAt(Instant.now());
 
         Video savedVideo = videoRepository.save(video);
+
+        VideoProcessingMessage message = new VideoProcessingMessage(
+                savedVideo.getId(),
+                savedVideo.getSourceS3Key(),
+                savedVideo.getEmail()
+        );
+
+        videoProducer.sendToTranscodingQueue(message);
 
         return new UploadCompleteResponse(
                 savedVideo.getId(),
