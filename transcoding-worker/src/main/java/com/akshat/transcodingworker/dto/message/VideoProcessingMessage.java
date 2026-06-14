@@ -1,4 +1,4 @@
-package com.akshat.streamingv2.dto.message;
+package com.akshat.transcodingworker.dto.message;
 
 
 public class VideoProcessingMessage{
