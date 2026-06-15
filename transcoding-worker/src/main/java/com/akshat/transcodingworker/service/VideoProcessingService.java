@@ -1,0 +1,91 @@
+package com.akshat.transcodingworker.service;
+
+import java.nio.file.Path;
+
+import org.springframework.stereotype.Service;
+
+import com.akshat.transcodingworker.dto.message.VideoProcessingMessage;
+import com.akshat.transcodingworker.entity.Video;
+import com.akshat.transcodingworker.enums.VideoStatus;
+import com.akshat.transcodingworker.repository.VideoRepository;
+import com.akshat.transcodingworker.service.storage.S3Service;
+import com.akshat.transcodingworker.service.transcoding.FfmpegService;
+
+@Service
+public class VideoProcessingService {
+
+    private final VideoRepository videoRepository;
+    private final S3Service s3Service;
+    private final FfmpegService ffmpegService;
+
+    public VideoProcessingService(
+            VideoRepository videoRepository,
+            S3Service s3Service,
+            FfmpegService ffmpegService) {
+
+        this.videoRepository = videoRepository;
+        this.s3Service = s3Service;
+        this.ffmpegService = ffmpegService;
+    }
+
+    public void processVideo(
+            VideoProcessingMessage message) {
+
+        Long videoId = message.getId();
+
+        Video video = videoRepository
+                .findById(videoId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Video not found with id: "
+                                        + videoId));
+
+        try {
+
+            video.setStatus(
+                    VideoStatus.PROCESSING);
+
+            videoRepository.save(video);
+
+            System.out.println(
+                    "Video "
+                            + videoId
+                            + " marked as PROCESSING");
+
+            Path downloadedFile =
+                    s3Service.downloadFile(
+                            message.getSourceS3Key());
+
+            System.out.println(
+                    "Downloaded file to: "
+                            + downloadedFile);
+
+            Path transcodedDirectory =
+                    ffmpegService.generateHls(
+                            downloadedFile);
+
+            System.out.println(
+                    "Generated HLS at: "
+                            + transcodedDirectory);
+
+            // Next step:
+            // s3Service.uploadDirectory(transcodedDirectory);
+
+            // Final step:
+            // video.setStatus(VideoStatus.PROCESSED);
+            // videoRepository.save(video);
+
+        } catch (Exception e) {
+
+            video.setStatus(
+                    VideoStatus.FAILED);
+
+            videoRepository.save(video);
+
+            throw new RuntimeException(
+                    "Video processing failed for id: "
+                            + videoId,
+                    e);
+        }
+    }
+}
