@@ -69,11 +69,12 @@ public class VideoProcessingService {
                             + transcodedDirectory);
 
             // Next step:
-            // s3Service.uploadDirectory(transcodedDirectory);
+            String masterPLaylistKey = s3Service.uploadDirectory(transcodedDirectory);
 
             // Final step:
-            // video.setStatus(VideoStatus.PROCESSED);
-            // videoRepository.save(video);
+            video.setMasterPlaylistKey(masterPLaylistKey);
+            video.setStatus(VideoStatus.READY);
+            videoRepository.save(video);
 
         } catch (Exception e) {
 
