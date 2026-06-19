@@ -9,6 +9,8 @@ import com.akshat.streamingv2.enums.VideoStatus;
 import com.akshat.streamingv2.producer.VideoProducer;
 import com.akshat.streamingv2.repository.VideoRepository;
 import com.akshat.streamingv2.dto.message.VideoProcessingMessage;
+import com.akshat.streamingv2.dto.response.StreamVideoResponse;
+import com.akshat.streamingv2.service.s3.S3Service;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,10 +20,12 @@ public class VideoMetaDataService {
 
     private final VideoRepository videoRepository;
     private final VideoProducer videoProducer;
+    private final S3Service s3Service;
 
-    public VideoMetaDataService(VideoRepository repo, VideoProducer videoProducer) {
+    public VideoMetaDataService(VideoRepository repo, VideoProducer videoProducer, S3Service s3Service) {
         this.videoRepository = repo;
         this.videoProducer = videoProducer;
+        this.s3Service = s3Service;
     }
 
     public void saveVideo(Video video) {
@@ -30,8 +34,7 @@ public class VideoMetaDataService {
 
     public Video getVideoById(Long id) {
         return videoRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Video not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Video not found with id: " + id));
     }
 
     public void deleteVideo(Long id) {
@@ -66,15 +69,31 @@ public class VideoMetaDataService {
         VideoProcessingMessage message = new VideoProcessingMessage(
                 savedVideo.getId(),
                 savedVideo.getSourceS3Key(),
-                savedVideo.getEmail()
-        );
+                savedVideo.getEmail());
 
         videoProducer.sendToTranscodingQueue(message);
 
         return new UploadCompleteResponse(
                 savedVideo.getId(),
                 savedVideo.getEmail(),
-                "Video uploaded successfully"
-        );
+                "Video uploaded successfully");
+    }
+
+    public StreamVideoResponse streamUrl(
+            Long id) {
+
+        Video video = getVideoById(id);
+
+        if (video.getStatus() != VideoStatus.READY) {
+            throw new RuntimeException(
+                    "Video is not ready for streaming");
+        }
+
+        String streamUrl = s3Service.generateStreamUrl(
+                video.getMasterPlaylistKey());
+
+        return new StreamVideoResponse(
+                streamUrl,
+                video.getTitle());
     }
 }

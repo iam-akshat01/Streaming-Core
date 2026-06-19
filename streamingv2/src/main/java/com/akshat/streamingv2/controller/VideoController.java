@@ -1,5 +1,6 @@
 package com.akshat.streamingv2.controller;
 
+import com.akshat.streamingv2.dto.response.StreamVideoResponse;
 import com.akshat.streamingv2.entity.Video;
 import com.akshat.streamingv2.service.video.VideoMetaDataService;
 
@@ -41,5 +42,12 @@ public class VideoController {
     @DeleteMapping("/{id}")
     public void deleteVideo(@PathVariable Long id) {
         videoservice.deleteVideo(id);
+    }
+
+    @GetMapping("/{id}/stream")
+    public StreamVideoResponse streamVideo(
+            @PathVariable Long id) {
+
+        return videoservice.streamUrl(id);
     }
 }
