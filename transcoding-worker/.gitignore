@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+worker-storage/downloads/
+worker-storage/transcoded/

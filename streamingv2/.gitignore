@@ -34,3 +34,6 @@ build/
 
 .env
 src/main/resources/application.properties
+
+worker-storage/downloads/
+worker-storage/transcoded/
