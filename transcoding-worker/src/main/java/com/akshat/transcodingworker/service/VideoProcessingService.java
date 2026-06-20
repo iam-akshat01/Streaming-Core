@@ -4,12 +4,13 @@ import java.nio.file.Path;
 
 import org.springframework.stereotype.Service;
 
-import com.akshat.transcodingworker.dto.message.VideoProcessingMessage;
+import com.akshat.transcodingworker.dto.message.*;
 import com.akshat.transcodingworker.entity.Video;
 import com.akshat.transcodingworker.enums.VideoStatus;
 import com.akshat.transcodingworker.repository.VideoRepository;
 import com.akshat.transcodingworker.service.storage.S3Service;
 import com.akshat.transcodingworker.service.transcoding.FfmpegService;
+import com.akshat.transcodingworker.producer.VideoProcessedProducer;
 
 @Service
 public class VideoProcessingService {
@@ -17,15 +18,18 @@ public class VideoProcessingService {
     private final VideoRepository videoRepository;
     private final S3Service s3Service;
     private final FfmpegService ffmpegService;
+    private final VideoProcessedProducer videoProcessedProducer;
 
     public VideoProcessingService(
             VideoRepository videoRepository,
             S3Service s3Service,
-            FfmpegService ffmpegService) {
+            FfmpegService ffmpegService,
+            VideoProcessedProducer videoProcessedProducer) {
 
         this.videoRepository = videoRepository;
         this.s3Service = s3Service;
         this.ffmpegService = ffmpegService;
+        this.videoProcessedProducer = videoProcessedProducer;
     }
 
     public void processVideo(
@@ -75,6 +79,14 @@ public class VideoProcessingService {
             video.setMasterPlaylistKey(masterPLaylistKey);
             video.setStatus(VideoStatus.READY);
             videoRepository.save(video);
+
+            VideoProcessedMessage processedmessage = new VideoProcessedMessage(
+                videoId,
+                video.getStatus().name()
+            );
+
+            videoProcessedProducer.sendToNotifQueue(processedmessage);
+
 
         } catch (Exception e) {
 

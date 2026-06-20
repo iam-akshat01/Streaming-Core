@@ -48,7 +48,7 @@ public class FfmpegService {
                     outputDirectory);
 
             System.out.println(
-                    "Generating HLS for "
+                    "Generating Multi-Bitrate HLS for "
                             + inputFile);
 
             List<String> command = new ArrayList<>();
@@ -58,14 +58,24 @@ public class FfmpegService {
             command.add("-i");
             command.add(inputFile.toString());
 
-            command.add("-vf");
-            command.add("scale=-2:480");
+            command.add("-filter_complex");
+            command.add("[0:v]split=3[v1][v2][v3]; [v1]scale=-2:1080[v1out]; [v2]scale=-2:720[v2out]; [v3]scale=-2:480[v3out]");
 
-            command.add("-codec:v");
-            command.add("libx264");
+            command.add("-map"); command.add("[v1out]");
+            command.add("-c:v:0"); command.add("libx264");
+            command.add("-b:v:0"); command.add("5000k");
 
-            command.add("-codec:a");
-            command.add("aac");
+            command.add("-map"); command.add("[v2out]");
+            command.add("-c:v:1"); command.add("libx264");
+            command.add("-b:v:1"); command.add("2800k");
+
+            command.add("-map"); command.add("[v3out]");
+            command.add("-c:v:2"); command.add("libx264");
+            command.add("-b:v:2"); command.add("1400k");
+
+            command.add("-map"); command.add("0:a");
+            command.add("-c:a"); command.add("aac");
+            command.add("-b:a"); command.add("128k");
 
             command.add("-f");
             command.add("hls");
@@ -76,15 +86,18 @@ public class FfmpegService {
             command.add("-hls_list_size");
             command.add("0");
 
+            command.add("-var_stream_map");
+            command.add("v:0,a:0 v:1,a:0 v:2,a:0");
+
             command.add("-hls_segment_filename");
             command.add(
                     outputDirectory
-                            .resolve("segment_%03d.ts")
+                            .resolve("%v/segment_%05d.ts")
                             .toString());
 
             command.add(
                     outputDirectory
-                            .resolve("index.m3u8")
+                            .resolve("master.m3u8")
                             .toString());
 
             ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -116,3 +129,4 @@ public class FfmpegService {
         }
     }
 }
+ // 0 is 180 so its in descending order 
