@@ -56,7 +56,8 @@ public class S3Service {
         public String uploadDirectory(Path transcodedFolderDirectory) {
 
                 String s3FolderPath = "hls/"
-                                + transcodedFolderDirectory.getFileName()
+                                + transcodedFolderDirectory
+                                                .getFileName()
                                                 .toString()
                                 + "/";
 
@@ -76,8 +77,7 @@ public class S3Service {
                                                                 .replace("\\", "/");
 
                                 String fileName = filePath.getFileName()
-                                                .toString()
-                                                .toLowerCase();
+                                                .toString();
 
                                 String contentType = "application/octet-stream";
 
@@ -85,7 +85,7 @@ public class S3Service {
 
                                         contentType = "application/x-mpegURL";
 
-                                        if (masterPlaylistKey == null) {
+                                        if (fileName.equalsIgnoreCase("master.m3u8")) {
                                                 masterPlaylistKey = s3Key;
                                         }
 
@@ -105,8 +105,7 @@ public class S3Service {
                                                 RequestBody.fromFile(filePath));
 
                                 System.out.println(
-                                                "Uploaded: "
-                                                                + s3Key);
+                                                "Uploaded: " + s3Key);
                         }
 
                 } catch (IOException e) {
@@ -119,7 +118,7 @@ public class S3Service {
                 if (masterPlaylistKey == null) {
 
                         throw new RuntimeException(
-                                        "No playlist file (.m3u8) found");
+                                        "master.m3u8 not found");
                 }
 
                 return masterPlaylistKey;
