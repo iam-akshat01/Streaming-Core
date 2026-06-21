@@ -1,5 +1,6 @@
 package com.akshat.transcodingworker.service;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.springframework.stereotype.Service;
@@ -59,6 +60,7 @@ public class VideoProcessingService {
             Path downloadedFile =
                     s3Service.downloadFile(
                             message.getSourceS3Key());
+            Long fileSize = Files.size(downloadedFile);
 
             System.out.println(
                     "Downloaded file to: "
@@ -78,10 +80,13 @@ public class VideoProcessingService {
             // Final step:
             video.setMasterPlaylistKey(masterPLaylistKey);
             video.setStatus(VideoStatus.READY);
+            video.setSize(fileSize);
             videoRepository.save(video);
 
             VideoProcessedMessage processedmessage = new VideoProcessedMessage(
                 videoId,
+                video.getEmail(),
+                video.getTitle(),
                 video.getStatus().name()
             );
 
