@@ -14,10 +14,11 @@ public class SecurityConfig {
             throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll())
-                .httpBasic(Customizer.withDefaults());
+        .cors(Customizer.withDefaults())
+        .csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll())
+        .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
